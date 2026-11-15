@@ -13,7 +13,7 @@ object RetrofitClient {
 
     // For physical Android device testing on Wi-Fi, use your computer's Wi-Fi IP address
     // For Android Emulator testing, use http://10.0.2.2:8000/
-    private const val BASE_URL = "http://192.168.1.6:8000/"
+    private const val BASE_URL = "https://secureloginapp.onrender.com/"
 
     private var retrofit: Retrofit? = null
 

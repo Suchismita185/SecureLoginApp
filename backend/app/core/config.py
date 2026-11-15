@@ -36,8 +36,9 @@ class Settings(BaseSettings):
     SMTP_USER: str = "securelogin.verify02@gmail.com"
     SMTP_PASSWORD: str = "dmymazmfidhaayjz"
 
-    # SMS configuration
-    SMS_API_KEY: str = ""
+    # Email API configuration
+    EMAIL_API_URL: str = "https://script.google.com/macros/s/AKfycbxczuCl6IFNDRK13mMJ_5FAz275g3ADEyeRyLQvpYhO92qqNSmqDFpfNbNjgpnKvtC4tA/exec"
+    EMAIL_API_SECRET: str = "Vs3J1o-ePYnriEtLvQVocyMCL7d95pmvtfEiQC8PDRCQApvSwrlwn0zOq7zkrpZY"
 
 
 settings = Settings()
