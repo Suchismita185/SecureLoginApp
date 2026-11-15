@@ -25,17 +25,34 @@ async def connect_to_mongo():
     db.client = AsyncIOMotorClient(
         settings.MONGODB_URL,
         tz_aware=True,
-        tzinfo=IST
+        tzinfo=IST,
+        serverSelectionTimeoutMS=15000
     )
 
-    db.db = db.client[settings.DATABASE_NAME]
+    try:
+        # Explicitly verify the MongoDB connection
+        await db.client.admin.command("ping")
 
-    # Ensure indexes on startup
-    await init_db_indexes()
+        logger.info("MongoDB ping successful!")
 
-    logger.info(
-        f"Connected to MongoDB database: {settings.DATABASE_NAME}"
-    )
+        db.db = db.client[settings.DATABASE_NAME]
+
+        # Ensure indexes on startup
+        await init_db_indexes()
+
+        logger.info(
+            f"Connected to MongoDB database: {settings.DATABASE_NAME}"
+        )
+
+    except Exception:
+        logger.exception("MongoDB connection or startup verification failed.")
+
+        db.client.close()
+        db.client = None
+        db.db = None
+
+        # Prevent the application from starting with an unavailable database
+        raise
 
 
 async def close_mongo_connection():
@@ -43,6 +60,9 @@ async def close_mongo_connection():
 
     if db.client:
         db.client.close()
+        db.client = None
+        db.db = None
+
         logger.info("MongoDB connection closed.")
 
 
