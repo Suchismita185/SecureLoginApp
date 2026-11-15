@@ -51,23 +51,11 @@ router = APIRouter(
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(req: RegisterRequest):
 
-    existing_user = await db.db.users.find_one({
-        "$or": [
-            {"email": str(req.email)},
-            {"phone_number": req.phone_number}
-        ]
-    })
-
+    existing_user = await db.db.users.find_one({"email": str(req.email)})
     if existing_user:
-        if existing_user.get("email") == str(req.email):
-            raise HTTPException(
-                status_code=400,
-                detail="Email address is already registered."
-            )
-
         raise HTTPException(
             status_code=400,
-            detail="Mobile phone number is already registered."
+            detail="Email address is already registered."
         )
 
     registration_ref = f"reg_{uuid.uuid4().hex}"
@@ -78,18 +66,12 @@ async def register_user(req: RegisterRequest):
         "registration_ref": registration_ref,
         "full_name": req.full_name,
         "email": str(req.email),
-        "phone_number": req.phone_number,
         "password_hash": hashed_pwd,
         "created_at": now
     }
 
-    # Remove previous unfinished registrations for this email or phone.
-    await db.db.pending_registrations.delete_many({
-        "$or": [
-            {"email": str(req.email)},
-            {"phone_number": req.phone_number}
-        ]
-    })
+    # Remove previous unfinished registrations for this email.
+    await db.db.pending_registrations.delete_many({"email": str(req.email)})
 
     await db.db.pending_registrations.insert_one(pending_doc)
 
@@ -321,18 +303,12 @@ async def complete_registration(req: CompleteRegistrationRequest):
             detail="Pending registration data expired or invalid."
         )
 
-    # Check for duplicates again before account creation.
-    existing_user = await db.db.users.find_one({
-        "$or": [
-            {"email": pending["email"]},
-            {"phone_number": pending["phone_number"]}
-        ]
-    })
-
+    # Check for duplicate email again before account creation.
+    existing_user = await db.db.users.find_one({"email": pending["email"]})
     if existing_user:
         raise HTTPException(
             status_code=409,
-            detail="Email or phone number is already registered."
+            detail="Email address is already registered."
         )
 
     now = get_ist_time()
@@ -340,7 +316,7 @@ async def complete_registration(req: CompleteRegistrationRequest):
     user_doc = {
         "full_name": pending["full_name"],
         "email": pending["email"],
-        "phone_number": pending["phone_number"],
+        "phone_number": pending.get("phone_number"),
         "password_hash": pending["password_hash"],
         "email_verified": True,
         "account_status": "active",
@@ -388,7 +364,7 @@ async def complete_registration(req: CompleteRegistrationRequest):
             "id": user_id,
             "full_name": pending["full_name"],
             "email": pending["email"],
-            "phone_number": pending["phone_number"],
+            "phone_number": pending.get("phone_number"),
             "email_verified": True,
             "account_status": "active",
             "created_at": now.isoformat()

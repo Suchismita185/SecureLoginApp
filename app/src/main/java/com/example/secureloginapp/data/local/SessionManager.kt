@@ -26,7 +26,7 @@ class SessionManager(context: Context) {
         userId: String,
         name: String,
         email: String,
-        phone: String,
+        phone: String? = null,
         createdAt: String? = null
     ) {
         val editor = prefs.edit()
@@ -35,7 +35,7 @@ class SessionManager(context: Context) {
         editor.putString(KEY_USER_ID, userId)
         editor.putString(KEY_USER_NAME, name)
         editor.putString(KEY_USER_EMAIL, email)
-        editor.putString(KEY_USER_PHONE, phone)
+        editor.putString(KEY_USER_PHONE, phone ?: "")
         editor.putString(KEY_CREATED_AT, createdAt ?: "")
         editor.putBoolean(KEY_IS_LOGGED_IN, true)
         editor.apply()

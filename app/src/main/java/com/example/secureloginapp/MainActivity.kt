@@ -76,7 +76,14 @@ class MainActivity : AppCompatActivity() {
 
             tvWelcomeUser.text = "Welcome, ${sessionManager.getUserName()}!"
             tvUserEmail.text = sessionManager.getUserEmail()
-            tvUserPhone.text = sessionManager.getUserPhone()
+
+            val phone = sessionManager.getUserPhone()
+            if (phone.isNotBlank()) {
+                tvUserPhone.visibility = View.VISIBLE
+                tvUserPhone.text = phone
+            } else {
+                tvUserPhone.visibility = View.GONE
+            }
 
             val rawCreatedAt = sessionManager.getCreatedAt()
             val formattedDate = IstDateTime.format(rawCreatedAt)

@@ -1,4 +1,3 @@
-
 from pydantic import (
     BaseModel,
     EmailStr,
@@ -18,30 +17,18 @@ from app.core.time_utils import convert_to_ist
 class UserBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    phone_number: str
+    phone_number: Optional[str] = None
 
 
 # -------------------------------
 # Registration
 # -------------------------------
 
-class RegisterRequest(UserBase):
+class RegisterRequest(BaseModel):
+    full_name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
     password: str = Field(..., min_length=8, max_length=64)
     confirm_password: str = Field(..., min_length=8, max_length=64)
-
-    @field_validator("phone_number")
-    @classmethod
-    def validate_phone(cls, v: str) -> str:
-        clean_v = v.strip().replace(" ", "").replace("-", "")
-        pattern = r"^\+[1-9]\d{7,14}$"
-
-        if not re.fullmatch(pattern, clean_v):
-            raise ValueError(
-                "Invalid phone format. Include country code "
-                "(e.g. +919876543210)."
-            )
-
-        return clean_v
 
     @field_validator("password")
     @classmethod
@@ -177,7 +164,7 @@ class UserResponse(BaseModel):
     id: str
     full_name: str
     email: str
-    phone_number: str
+    phone_number: Optional[str] = None
     email_verified: bool
     account_status: str
     created_at: Optional[datetime] = None

@@ -17,7 +17,6 @@ class RegisterActivity : AppCompatActivity() {
 
     private lateinit var etFullName: EditText
     private lateinit var etEmail: EditText
-    private lateinit var etPhone: EditText
     private lateinit var etPassword: EditText
     private lateinit var etConfirmPassword: EditText
 
@@ -30,7 +29,6 @@ class RegisterActivity : AppCompatActivity() {
 
         etFullName = findViewById(R.id.etFullName)
         etEmail = findViewById(R.id.etEmail)
-        etPhone = findViewById(R.id.etPhone)
         etPassword = findViewById(R.id.etPassword)
         etConfirmPassword = findViewById(R.id.etConfirmPassword)
 
@@ -49,7 +47,6 @@ class RegisterActivity : AppCompatActivity() {
     private fun validateAndRegister() {
         val name = etFullName.text.toString().trim()
         val email = etEmail.text.toString().trim()
-        var phone = etPhone.text.toString().trim()
         val password = etPassword.text.toString()
         val confirmPassword = etConfirmPassword.text.toString()
 
@@ -62,20 +59,6 @@ class RegisterActivity : AppCompatActivity() {
         if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             etEmail.error = "Enter a valid email address"
             etEmail.requestFocus()
-            return
-        }
-
-        // Standardize phone format to include country code if missing
-        val digits = phone.filter { it.isDigit() }
-        if (digits.length == 10) {
-            phone = "+91$digits"
-        } else if (!phone.startsWith("+")) {
-            phone = "+$digits"
-        }
-
-        if (digits.length < 8) {
-            etPhone.error = "Enter a valid phone number with country code"
-            etPhone.requestFocus()
             return
         }
 
@@ -107,7 +90,6 @@ class RegisterActivity : AppCompatActivity() {
                 val req = RegisterRequest(
                     fullName = name,
                     email = email,
-                    phoneNumber = phone,
                     password = password,
                     confirmPassword = confirmPassword
                 )
@@ -123,7 +105,6 @@ class RegisterActivity : AppCompatActivity() {
                     val intent = Intent(this@RegisterActivity, EmailOtpActivity::class.java).apply {
                         putExtra("registration_ref", body.registrationRef)
                         putExtra("email", body.email)
-                        putExtra("phone_number", body.phoneNumber)
                     }
                     startActivity(intent)
                 } else {

@@ -12,6 +12,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.example.secureloginapp.data.api.RetrofitClient
+import com.example.secureloginapp.data.local.SessionManager
+import com.example.secureloginapp.data.model.CompleteRegistrationRequest
 import com.example.secureloginapp.data.model.SendOtpRequest
 import com.example.secureloginapp.data.model.VerifyOtpRequest
 import kotlinx.coroutines.launch
@@ -26,16 +28,17 @@ class EmailOtpActivity : AppCompatActivity() {
 
     private var registrationRef: String = ""
     private var email: String = ""
-    private var phoneNumber: String = ""
     private var resendTimer: CountDownTimer? = null
+    private lateinit var sessionManager: SessionManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_email_otp)
 
+        sessionManager = SessionManager(this)
+
         registrationRef = intent.getStringExtra("registration_ref") ?: ""
         email = intent.getStringExtra("email") ?: ""
-        phoneNumber = intent.getStringExtra("phone_number") ?: ""
 
         otpFields = listOf(
             findViewById(R.id.otp1),
@@ -98,27 +101,48 @@ class EmailOtpActivity : AppCompatActivity() {
         }
 
         btnVerifyEmailOtp.isEnabled = false
-        btnVerifyEmailOtp.text = "Verifying..."
+        btnVerifyEmailOtp.text = "Verifying & Activating..."
 
         lifecycleScope.launch {
             try {
                 val api = RetrofitClient.getApiService(this@EmailOtpActivity)
-                val response = api.verifyEmailOtp(VerifyOtpRequest(registrationRef, otp))
-                btnVerifyEmailOtp.isEnabled = true
-                btnVerifyEmailOtp.text = "Verify OTP"
+                val verifyResp = api.verifyEmailOtp(VerifyOtpRequest(registrationRef, otp))
 
-                if (response.isSuccessful) {
-                    Toast.makeText(this@EmailOtpActivity, "Email verified! Proceeding to Mobile OTP.", Toast.LENGTH_SHORT).show()
+                if (verifyResp.isSuccessful) {
+                    // Complete registration to activate account and receive JWT tokens
+                    val completeResp = api.completeRegistration(CompleteRegistrationRequest(registrationRef))
 
-                    val intent = Intent(this@EmailOtpActivity, MobileOtpActivity::class.java).apply {
-                        putExtra("registration_ref", registrationRef)
-                        putExtra("email", email)
-                        putExtra("phone_number", phoneNumber)
+                    if (completeResp.isSuccessful && completeResp.body() != null) {
+                        val tokenData = completeResp.body()!!
+                        val user = tokenData.user
+
+                        sessionManager.saveAuthSession(
+                            accessToken = tokenData.accessToken,
+                            refreshToken = tokenData.refreshToken,
+                            userId = user?.id ?: "",
+                            name = user?.fullName ?: "User",
+                            email = user?.email ?: email,
+                            phone = user?.phoneNumber,
+                            createdAt = user?.createdAt
+                        )
+
+                        Toast.makeText(this@EmailOtpActivity, "Email Verified & Account Activated!", Toast.LENGTH_LONG).show()
+
+                        val intent = Intent(this@EmailOtpActivity, MainActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                        finish()
+                    } else {
+                        btnVerifyEmailOtp.isEnabled = true
+                        btnVerifyEmailOtp.text = "Verify OTP"
+                        val errorMsg = completeResp.errorBody()?.string() ?: "Failed to complete account activation."
+                        Toast.makeText(this@EmailOtpActivity, extractErrorMessage(errorMsg), Toast.LENGTH_LONG).show()
                     }
-                    startActivity(intent)
-                    finish()
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: "OTP verification failed."
+                    btnVerifyEmailOtp.isEnabled = true
+                    btnVerifyEmailOtp.text = "Verify OTP"
+                    val errorMsg = verifyResp.errorBody()?.string() ?: "Email OTP verification failed."
                     Toast.makeText(this@EmailOtpActivity, extractErrorMessage(errorMsg), Toast.LENGTH_LONG).show()
                 }
             } catch (e: Exception) {

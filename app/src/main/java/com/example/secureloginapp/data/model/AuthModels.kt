@@ -2,11 +2,10 @@ package com.example.secureloginapp.data.model
 
 import com.google.gson.annotations.SerializedName
 
-// Registration & Dual OTP Models
+// Registration & Email OTP Models
 data class RegisterRequest(
     @SerializedName("full_name") val fullName: String,
     @SerializedName("email") val email: String,
-    @SerializedName("phone_number") val phoneNumber: String,
     @SerializedName("password") val password: String,
     @SerializedName("confirm_password") val confirmPassword: String
 )
@@ -15,8 +14,7 @@ data class RegisterResponse(
     @SerializedName("status") val status: String,
     @SerializedName("message") val message: String,
     @SerializedName("registration_ref") val registrationRef: String,
-    @SerializedName("email") val email: String,
-    @SerializedName("phone_number") val phoneNumber: String
+    @SerializedName("email") val email: String
 )
 
 data class SendOtpRequest(
@@ -48,9 +46,8 @@ data class UserDto(
     @SerializedName("id") val id: String,
     @SerializedName("full_name") val fullName: String,
     @SerializedName("email") val email: String,
-    @SerializedName("phone_number") val phoneNumber: String,
+    @SerializedName("phone_number") val phoneNumber: String? = null,
     @SerializedName("email_verified") val emailVerified: Boolean,
-    @SerializedName("phone_verified") val phoneVerified: Boolean,
     @SerializedName("account_status") val accountStatus: String,
     @SerializedName("created_at") val createdAt: String? = null
 )
