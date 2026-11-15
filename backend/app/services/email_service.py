@@ -1,9 +1,8 @@
 
 import asyncio
-import json
 import logging
 import re
-import urllib.request
+import requests
 
 from app.core.config import settings
 
@@ -15,7 +14,7 @@ def _send_email_via_api(
     subject: str,
     body: str
 ) -> bool:
-    """Send an email through the Google Apps Script HTTPS API."""
+    """Send an email through Google Apps Script HTTPS API."""
 
     payload = {
         "secret": settings.EMAIL_API_SECRET,
@@ -24,25 +23,43 @@ def _send_email_via_api(
         "body": body
     }
 
-    request_data = json.dumps(payload).encode("utf-8")
-
-    request = urllib.request.Request(
+    response = requests.post(
         settings.EMAIL_API_URL,
-        data=request_data,
-        headers={
-            "Content-Type": "application/json"
-        },
-        method="POST"
+        json=payload,
+        timeout=40,
+        allow_redirects=False
     )
 
-    # Google Apps Script may redirect its response (HTTP 302).
-    with urllib.request.urlopen(request, timeout=40) as response:
-        result = json.loads(response.read().decode("utf-8"))
+    # Google Apps Script commonly responds with HTTP 302.
+    if response.status_code in (301, 302, 303, 307, 308):
+        redirect_url = response.headers.get("Location")
+
+        if not redirect_url:
+            logger.error("Email API redirect did not include a Location header.")
+            return False
+
+        # Fetch the redirected response using GET.
+        response = requests.get(
+            redirect_url,
+            timeout=40
+        )
+
+    response.raise_for_status()
+
+    try:
+        result = response.json()
+    except ValueError:
+        logger.error("Email API returned an invalid JSON response.")
+        return False
 
     if result.get("success") is True:
         return True
 
-    logger.error("Email API reported failure for recipient %s", to_email)
+    logger.error(
+        "Email API reported failure for recipient %s: %s",
+        to_email,
+        result.get("message", "Unknown error")
+    )
     return False
 
 
@@ -51,9 +68,7 @@ async def send_email_otp(
     otp: str,
     name: str = "User"
 ) -> bool:
-    """
-    Send a 6-digit verification OTP through Google Apps Script.
-    """
+    """Send a six-digit verification OTP."""
 
     if not re.fullmatch(r"\d{6}", otp):
         logger.error("Invalid OTP format.")
@@ -87,6 +102,10 @@ async def send_email_otp(
 
         return False
 
+    except requests.RequestException:
+        logger.exception("Email API request failed for %s", to_email)
+        return False
+
     except Exception:
-        logger.exception("Failed to send email OTP to %s", to_email)
+        logger.exception("Unexpected email sending error for %s", to_email)
         return False
