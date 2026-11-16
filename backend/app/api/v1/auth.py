@@ -316,7 +316,6 @@ async def complete_registration(req: CompleteRegistrationRequest):
     user_doc = {
         "full_name": pending["full_name"],
         "email": pending["email"],
-        "phone_number": pending.get("phone_number"),
         "password_hash": pending["password_hash"],
         "email_verified": True,
         "account_status": "active",
@@ -364,7 +363,6 @@ async def complete_registration(req: CompleteRegistrationRequest):
             "id": user_id,
             "full_name": pending["full_name"],
             "email": pending["email"],
-            "phone_number": pending.get("phone_number"),
             "email_verified": True,
             "account_status": "active",
             "created_at": now.isoformat()
@@ -384,7 +382,6 @@ async def login(req: LoginRequest):
     user = await db.db.users.find_one({
         "$or": [
             {"email": identifier},
-            {"phone_number": identifier}
         ]
     })
 
@@ -435,7 +432,6 @@ async def login(req: LoginRequest):
             "id": user_id,
             "full_name": user["full_name"],
             "email": user["email"],
-            "phone_number": user["phone_number"],
             "email_verified": user.get("email_verified", False),
             "account_status": user.get("account_status", "active"),
             "created_at": user.get("created_at").isoformat() if hasattr(user.get("created_at"), "isoformat") else (str(user.get("created_at")) if user.get("created_at") else None)
@@ -760,7 +756,6 @@ async def get_current_user_profile(
         id=str(current_user["_id"]),
         full_name=current_user["full_name"],
         email=current_user["email"],
-        phone_number=current_user["phone_number"],
         email_verified=current_user.get("email_verified", False),
         account_status=current_user.get("account_status", "active"),
         created_at=current_user.get("created_at")

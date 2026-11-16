@@ -75,14 +75,10 @@ async def init_db_indexes():
     try:
         # Users collection indexes
         await db.db.users.create_index("email", unique=True)
-        await db.db.users.create_index("phone_number", unique=True)
 
         # Pending registrations indexes
         await db.db.pending_registrations.create_index(
             "email", unique=True
-        )
-        await db.db.pending_registrations.create_index(
-            "phone_number", unique=True
         )
         await db.db.pending_registrations.create_index(
             "created_at",

@@ -17,7 +17,6 @@ from app.core.time_utils import convert_to_ist
 class UserBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    phone_number: Optional[str] = None
 
 
 # -------------------------------
@@ -164,7 +163,6 @@ class UserResponse(BaseModel):
     id: str
     full_name: str
     email: str
-    phone_number: Optional[str] = None
     email_verified: bool
     account_status: str
     created_at: Optional[datetime] = None
